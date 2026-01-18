@@ -93,26 +93,38 @@ class QwenImageEditApp(tk.Tk):
         select_button = tk.Button(
             left_frame, text="🔍 이미지 선택", command=self._select_image
         )
-        select_button.pack(anchor=tk.W)
+        select_button.grid(row=0, column=0, sticky="w")
+
+        left_frame.grid_columnconfigure(0, weight=1)
+
+        preview_frame = tk.Frame(left_frame, width=PREVIEW_SIZE[0], height=PREVIEW_SIZE[1])
+        preview_frame.grid(row=1, column=0, sticky="nsew", pady=8)
+        preview_frame.grid_propagate(False)
 
         self.preview_label = tk.Label(
-            left_frame, text="선택한 이미지 미리보기", relief=tk.GROOVE, width=30, height=12
+            preview_frame, text="선택한 이미지 미리보기", relief=tk.GROOVE
         )
-        self.preview_label.pack(pady=8, fill=tk.BOTH)
+        self.preview_label.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-        prompt_label = tk.Label(left_frame, text="프롬프트")
-        prompt_label.pack(anchor=tk.W)
+        prompt_label = tk.Label(left_frame, text="지시 프롬프트")
+        prompt_label.grid(row=2, column=0, sticky="w")
 
-        self.prompt_text = tk.Text(left_frame, height=6, wrap=tk.WORD)
-        self.prompt_text.pack(fill=tk.BOTH, expand=True)
+        self.prompt_text = tk.Text(left_frame, height=5, wrap=tk.WORD)
+        self.prompt_text.grid(row=3, column=0, sticky="ew", pady=(0, 8))
+
+        negative_label = tk.Label(left_frame, text="금지 프롬프트")
+        negative_label.grid(row=4, column=0, sticky="w")
+
+        self.negative_text = tk.Text(left_frame, height=4, wrap=tk.WORD)
+        self.negative_text.grid(row=5, column=0, sticky="ew", pady=(0, 8))
 
         self.generate_button = tk.Button(
             left_frame, text="생성", command=self._start_generation
         )
-        self.generate_button.pack(anchor=tk.W, pady=8)
+        self.generate_button.grid(row=6, column=0, sticky="w", pady=4)
 
         self.status_label = tk.Label(left_frame, text="대기 중")
-        self.status_label.pack(anchor=tk.W)
+        self.status_label.grid(row=7, column=0, sticky="w")
 
         output_title = tk.Label(right_frame, text="결과 이미지")
         output_title.pack(anchor=tk.W)
@@ -169,18 +181,22 @@ class QwenImageEditApp(tk.Tk):
             messagebox.showwarning("안내", "프롬프트를 입력해주세요.")
             return
 
+        negative_prompt = self.negative_text.get("1.0", tk.END).strip()
+
         self.generate_button.configure(state=tk.DISABLED)
         self.save_button.configure(state=tk.DISABLED)
         self.status_label.configure(text="생성 중...")
 
         thread = threading.Thread(
             target=self._generate_image,
-            args=(api_key, prompt, self.selected_image),
+            args=(api_key, prompt, negative_prompt, self.selected_image),
             daemon=True,
         )
         thread.start()
 
-    def _generate_image(self, api_key: str, prompt: str, image_path: Path) -> None:
+    def _generate_image(
+        self, api_key: str, prompt: str, negative_prompt: str, image_path: Path
+    ) -> None:
         try:
             dashscope.base_http_api_url = DEFAULT_BASE_URL
 
@@ -197,17 +213,19 @@ class QwenImageEditApp(tk.Tk):
                 messages=messages,
                 result_format="message",
                 stream=False,
-                watermark=True,
-                negative_prompt="",
+                watermark=False,
+                negative_prompt=negative_prompt,
             )
 
             image_url = extract_image_url(response)
             self.output_bytes = download_image(image_url)
-            self._update_output_preview()
         except Exception as exc:
-            self._set_error(str(exc))
+            self.after(0, self._set_error, str(exc))
         finally:
-            self._set_idle()
+            self.after(0, self._set_idle)
+
+        if self.output_bytes:
+            self.after(0, self._update_output_preview)
 
     def _update_output_preview(self) -> None:
         if not self.output_bytes:
