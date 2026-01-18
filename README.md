@@ -15,10 +15,7 @@ python --version
 
 ## 2) 프로젝트 다운로드
 
-```bash
-git clone <레포지토리_URL>
-cd Qwen-Image-Edit_Through_API_Key_and_GUI
-```
+qwen_image_edit_gui.py 파일과 requirements.txt 파일을 이용하려는 위치에 다운로드하여 압축을 풀어 놓습니다.
 
 ## 3) 가상환경 생성 및 활성화 (권장)
 
@@ -27,7 +24,7 @@ python -m venv .venv
 ```
 
 - Windows:
-
+만일 자꾸 실패하신다면 해당 폴더 안의 activate 숼 스크립트를 관리자 권한으로 실행하셔도 됩니다.
 ```bash
 .venv\Scripts\activate
 ```
@@ -64,6 +61,6 @@ python qwen_image_edit_gui.py
 
 ## 참고
 
-- API 키는 DashScope에서 발급받아 사용합니다.
+- API 키는 알리바바 클라우드에서 발급받아 사용합니다. (https://modelstudio.console.alibabacloud.com/)
 - 결과 이미지는 PNG로 저장됩니다.
-- 선택한 이미지는 왼쪽에서 오른쪽 순서대로 input1, input2, input3으로 전송됩니다.
+- 선택한 이미지는 위에서 아래 순서대로 input1, input2, input3으로 전송됩니다. 프롬프팅을 할 때 고려하여 주십시오.
