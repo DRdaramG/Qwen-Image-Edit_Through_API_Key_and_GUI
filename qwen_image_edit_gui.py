@@ -397,6 +397,10 @@ class QwenImageEditApp(tk.Tk):
 
     def _set_error(self, message: str) -> None:
         self.status_label.configure(text=f"오류: {message}")
+        self.output_bytes = None
+        self.output_photo = None
+        self.output_label.configure(image="", text=f"오류 메시지:\n{message}")
+        self.save_button.configure(state=tk.DISABLED)
 
     def _set_idle(self) -> None:
         self.generate_button.configure(state=tk.NORMAL)
