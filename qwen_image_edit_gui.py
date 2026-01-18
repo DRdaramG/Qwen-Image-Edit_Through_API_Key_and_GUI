@@ -73,10 +73,14 @@ class QwenImageEditApp(tk.Tk):
         self.geometry("900x600")
         self.resizable(True, True)
 
-        self.selected_image: Optional[Path] = None
+        self.selected_image_1: Optional[Path] = None
+        self.selected_image_2: Optional[Path] = None
+        self.selected_image_3: Optional[Path] = None
         self.output_bytes: Optional[bytes] = None
         self.preview_photo: Optional[ImageTk.PhotoImage] = None
         self.output_photo: Optional[ImageTk.PhotoImage] = None
+        self.preview_photo_2: Optional[ImageTk.PhotoImage] = None
+        self.preview_photo_3: Optional[ImageTk.PhotoImage] = None
 
         self._build_ui()
 
@@ -91,7 +95,7 @@ class QwenImageEditApp(tk.Tk):
         right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(12, 0))
 
         select_button = tk.Button(
-            left_frame, text="🔍 이미지 선택", command=self._select_image
+            left_frame, text="🔍 이미지 1 선택", command=self._select_image_1
         )
         select_button.grid(row=0, column=0, sticky="w")
 
@@ -102,29 +106,75 @@ class QwenImageEditApp(tk.Tk):
         preview_frame.grid_propagate(False)
 
         self.preview_label = tk.Label(
-            preview_frame, text="선택한 이미지 미리보기", relief=tk.GROOVE
+            preview_frame, text="이미지 1 미리보기", relief=tk.GROOVE
         )
         self.preview_label.place(relx=0, rely=0, relwidth=1, relheight=1)
 
+        image2_frame = tk.Frame(left_frame)
+        image2_frame.grid(row=2, column=0, sticky="ew")
+        self.image2_enabled = tk.BooleanVar(value=False)
+        image2_check = tk.Checkbutton(
+            image2_frame, text="이미지 2 포함", variable=self.image2_enabled
+        )
+        image2_check.pack(side=tk.LEFT)
+        image2_button = tk.Button(
+            image2_frame, text="🔍 이미지 2 선택", command=self._select_image_2
+        )
+        image2_button.pack(side=tk.LEFT, padx=8)
+
+        preview_frame_2 = tk.Frame(
+            left_frame, width=PREVIEW_SIZE[0], height=PREVIEW_SIZE[1]
+        )
+        preview_frame_2.grid(row=3, column=0, sticky="nsew", pady=8)
+        preview_frame_2.grid_propagate(False)
+
+        self.preview_label_2 = tk.Label(
+            preview_frame_2, text="이미지 2 미리보기", relief=tk.GROOVE
+        )
+        self.preview_label_2.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+        image3_frame = tk.Frame(left_frame)
+        image3_frame.grid(row=4, column=0, sticky="ew")
+        self.image3_enabled = tk.BooleanVar(value=False)
+        image3_check = tk.Checkbutton(
+            image3_frame, text="이미지 3 포함", variable=self.image3_enabled
+        )
+        image3_check.pack(side=tk.LEFT)
+        image3_button = tk.Button(
+            image3_frame, text="🔍 이미지 3 선택", command=self._select_image_3
+        )
+        image3_button.pack(side=tk.LEFT, padx=8)
+
+        preview_frame_3 = tk.Frame(
+            left_frame, width=PREVIEW_SIZE[0], height=PREVIEW_SIZE[1]
+        )
+        preview_frame_3.grid(row=5, column=0, sticky="nsew", pady=8)
+        preview_frame_3.grid_propagate(False)
+
+        self.preview_label_3 = tk.Label(
+            preview_frame_3, text="이미지 3 미리보기", relief=tk.GROOVE
+        )
+        self.preview_label_3.place(relx=0, rely=0, relwidth=1, relheight=1)
+
         prompt_label = tk.Label(left_frame, text="지시 프롬프트")
-        prompt_label.grid(row=2, column=0, sticky="w")
+        prompt_label.grid(row=6, column=0, sticky="w")
 
         self.prompt_text = tk.Text(left_frame, height=5, wrap=tk.WORD)
-        self.prompt_text.grid(row=3, column=0, sticky="ew", pady=(0, 8))
+        self.prompt_text.grid(row=7, column=0, sticky="ew", pady=(0, 8))
 
         negative_label = tk.Label(left_frame, text="금지 프롬프트")
-        negative_label.grid(row=4, column=0, sticky="w")
+        negative_label.grid(row=8, column=0, sticky="w")
 
         self.negative_text = tk.Text(left_frame, height=4, wrap=tk.WORD)
-        self.negative_text.grid(row=5, column=0, sticky="ew", pady=(0, 8))
+        self.negative_text.grid(row=9, column=0, sticky="ew", pady=(0, 8))
 
         self.generate_button = tk.Button(
             left_frame, text="생성", command=self._start_generation
         )
-        self.generate_button.grid(row=6, column=0, sticky="w", pady=4)
+        self.generate_button.grid(row=10, column=0, sticky="w", pady=4)
 
         self.status_label = tk.Label(left_frame, text="대기 중")
-        self.status_label.grid(row=7, column=0, sticky="w")
+        self.status_label.grid(row=11, column=0, sticky="w")
 
         output_title = tk.Label(right_frame, text="결과 이미지")
         output_title.pack(anchor=tk.W)
@@ -151,7 +201,7 @@ class QwenImageEditApp(tk.Tk):
         if env_api_key:
             self.api_entry.insert(0, env_api_key)
 
-    def _select_image(self) -> None:
+    def _select_image_1(self) -> None:
         file_path = filedialog.askopenfilename(
             title="이미지 선택",
             filetypes=[("Image files", "*.png;*.jpg;*.jpeg;*.webp;*.bmp"), ("All files", "*")],
@@ -159,16 +209,52 @@ class QwenImageEditApp(tk.Tk):
         if not file_path:
             return
 
-        self.selected_image = Path(file_path)
+        self.selected_image_1 = Path(file_path)
         try:
-            self.preview_photo = load_thumbnail(self.selected_image, PREVIEW_SIZE)
+            self.preview_photo = load_thumbnail(self.selected_image_1, PREVIEW_SIZE)
             self.preview_label.configure(image=self.preview_photo, text="")
         except Exception as exc:
             messagebox.showerror("오류", f"이미지 미리보기에 실패했습니다: {exc}")
 
+    def _select_image_2(self) -> None:
+        file_path = filedialog.askopenfilename(
+            title="이미지 선택",
+            filetypes=[("Image files", "*.png;*.jpg;*.jpeg;*.webp;*.bmp"), ("All files", "*")],
+        )
+        if not file_path:
+            return
+
+        self.selected_image_2 = Path(file_path)
+        try:
+            self.preview_photo_2 = load_thumbnail(self.selected_image_2, PREVIEW_SIZE)
+            self.preview_label_2.configure(image=self.preview_photo_2, text="")
+        except Exception as exc:
+            messagebox.showerror("오류", f"이미지 미리보기에 실패했습니다: {exc}")
+
+    def _select_image_3(self) -> None:
+        file_path = filedialog.askopenfilename(
+            title="이미지 선택",
+            filetypes=[("Image files", "*.png;*.jpg;*.jpeg;*.webp;*.bmp"), ("All files", "*")],
+        )
+        if not file_path:
+            return
+
+        self.selected_image_3 = Path(file_path)
+        try:
+            self.preview_photo_3 = load_thumbnail(self.selected_image_3, PREVIEW_SIZE)
+            self.preview_label_3.configure(image=self.preview_photo_3, text="")
+        except Exception as exc:
+            messagebox.showerror("오류", f"이미지 미리보기에 실패했습니다: {exc}")
+
     def _start_generation(self) -> None:
-        if not self.selected_image:
+        if not self.selected_image_1:
             messagebox.showwarning("안내", "이미지를 선택해주세요.")
+            return
+        if self.image2_enabled.get() and not self.selected_image_2:
+            messagebox.showwarning("안내", "이미지 2를 선택해주세요.")
+            return
+        if self.image3_enabled.get() and not self.selected_image_3:
+            messagebox.showwarning("안내", "이미지 3을 선택해주세요.")
             return
 
         api_key = self.api_entry.get().strip()
@@ -189,21 +275,45 @@ class QwenImageEditApp(tk.Tk):
 
         thread = threading.Thread(
             target=self._generate_image,
-            args=(api_key, prompt, negative_prompt, self.selected_image),
+            args=(
+                api_key,
+                prompt,
+                negative_prompt,
+                self.selected_image_1,
+                self.selected_image_2,
+                self.selected_image_3,
+                self.image2_enabled.get(),
+                self.image3_enabled.get(),
+            ),
             daemon=True,
         )
         thread.start()
 
     def _generate_image(
-        self, api_key: str, prompt: str, negative_prompt: str, image_path: Path
+        self,
+        api_key: str,
+        prompt: str,
+        negative_prompt: str,
+        image_path_1: Path,
+        image_path_2: Optional[Path],
+        image_path_3: Optional[Path],
+        include_image_2: bool,
+        include_image_3: bool,
     ) -> None:
         try:
             dashscope.base_http_api_url = DEFAULT_BASE_URL
 
+            content = [image_to_payload(str(image_path_1))]
+            if include_image_2 and image_path_2:
+                content.append(image_to_payload(str(image_path_2)))
+            if include_image_3 and image_path_3:
+                content.append(image_to_payload(str(image_path_3)))
+            content.append({"text": prompt})
+
             messages = [
                 {
                     "role": "user",
-                    "content": [image_to_payload(str(image_path)), {"text": prompt}],
+                    "content": content,
                 }
             ]
 
