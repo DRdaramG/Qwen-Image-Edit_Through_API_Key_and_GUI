@@ -15,7 +15,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 
 DEFAULT_BASE_URL = "https://dashscope-intl.aliyuncs.com/api/v1"
-PREVIEW_SIZE = (240, 240)
+PREVIEW_SIZE = (200, 200)
 OUTPUT_SIZE = (420, 420)
 
 
@@ -88,11 +88,37 @@ class QwenImageEditApp(tk.Tk):
         main_frame = tk.Frame(self)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=12, pady=12)
 
-        left_frame = tk.Frame(main_frame)
-        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        left_container = tk.Frame(main_frame)
+        left_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         right_frame = tk.Frame(main_frame)
         right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(12, 0))
+
+        left_canvas = tk.Canvas(left_container, highlightthickness=0)
+        left_scrollbar = tk.Scrollbar(
+            left_container, orient=tk.VERTICAL, command=left_canvas.yview
+        )
+        left_canvas.configure(yscrollcommand=left_scrollbar.set)
+        left_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        left_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        left_frame = tk.Frame(left_canvas)
+        left_canvas_window = left_canvas.create_window(
+            (0, 0), window=left_frame, anchor="nw"
+        )
+
+        def _sync_left_width(event: tk.Event) -> None:
+            left_canvas.itemconfig(left_canvas_window, width=event.width)
+
+        def _sync_left_scrollregion(_: tk.Event) -> None:
+            left_canvas.configure(scrollregion=left_canvas.bbox("all"))
+
+        left_canvas.bind("<Configure>", _sync_left_width)
+        left_frame.bind("<Configure>", _sync_left_scrollregion)
+        left_canvas.bind_all(
+            "<MouseWheel>",
+            lambda event: left_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units"),
+        )
 
         select_button = tk.Button(
             left_frame, text="🔍 이미지 1 선택", command=self._select_image_1
